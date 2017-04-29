@@ -1,0 +1,114 @@
+library(shiny)
+library(ggplot2)
+
+ui <- fluidPage(theme="darkly.css",
+  titlePanel("Predicting the level of student alcohol consumption"),
+  sidebarLayout(
+    sidebarPanel(id="sidebar",
+     sliderInput("age","Select Student Age:",min=15,max=22,value=1),
+     hr(),
+     sliderInput("famsize","Select the family size:",min=3,max=10,value = 2),
+     hr(),
+     selectInput("mjob","Mother's job",c("Teacher"="Teacher",
+                                             "Health Care"="Health Care",
+                                             "Civil Services"="Civil Services",
+                                             "Other" = "Other",
+                                             "At Home"="At Home")),
+     hr(),   
+     selectInput("fjob","Father's job",c("Teacher"="Teacher",
+                                             "Health Care"="Health Care",
+                                             "Civil Services"="Civil Services",
+                                             "Other" = "Other",
+                                             "At Home"="At Home")),
+      hr(),
+     sliderInput("fedu","Select the level of father's education:",min=0,max=4,value=1),
+     hr(),
+     sliderInput("traveltime","Select the travel time of student to school",min=1,max=4,value=1),
+     hr(),
+     sliderInput("studytime","Select the study time of student:",min=1,max=4,value=1),
+     hr(),
+     sliderInput("failures","Select the number of past failures:",min=0,max=4,value=1),
+     hr(),
+     sliderInput("higher","Select the level of interest in higher education:",min=0,max=1,value = 1),
+     hr(),
+     sliderInput("goout","Select the going out rate:",min=1,max=5,value=1),
+     hr(),
+     sliderInput("freetime","Select the free time of student:",min=1,max=5,value=1),
+     hr(),
+     sliderInput("absences","Select the number of absences:",min=0,max=93,value=5),
+     hr(),
+     sliderInput("Grade","Select the final grade of student:",min=0,max=20,value=1)),
+    mainPanel(
+      uiOutput("prediction")
+    )
+    )
+)
+
+
+server <- function(input,output,session){
+  data <- reactive({
+    age <- input$age
+    famsize <- input$famsize
+    mjob <- input$mjob
+    fjob <- input$fjob
+    fedu <- input$fedu
+    ttime <- input$traveltime
+    stime <- input$studytime
+    failures <- input$failures
+    higher <- input$higher
+    goout <- input$goout
+    ftime <- input$freetime
+    abs <- input$absences
+    grade <- input$Grade
+    
+    print(mjob)
+    print(fjob)
+    print(grade)
+    
+    
+    drinker <- "Little or no addiction to alcohol"
+    
+    if(age < 18)
+    {
+     
+      if((fedu >= 3) && (mjob != "At Home" | fjob != "At Home"))
+      {
+        if(stime < 3 && grade <= 10)
+        {
+          drinker <- "Highly addicted to alcohol"
+        }else{
+          drinker <- "Little or no addiction to alcohol"
+        }
+      }
+    }
+    
+    if(age >= 18)
+    {
+      if((fedu < 3) && (mjob == "At Home" | fjob == "At Home"))
+      {
+        if(stime < 3 && grade <= 10)
+        {
+          if(goout >= 3)
+          {
+            drinker <- "Highly addicted to alcohol"
+          }else{
+            drinker <- "Little or no addiction to alcohol"
+          }
+        }
+      }
+    }
+   
+    drinker
+    
+  })
+  
+ 
+  
+  output$prediction <- renderText({
+    data()
+  })
+  
+  
+}
+
+shinyApp(ui,server)

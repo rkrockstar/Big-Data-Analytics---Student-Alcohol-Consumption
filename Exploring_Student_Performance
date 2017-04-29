@@ -1,0 +1,476 @@
+library('ggplot2')
+library('ggthemes')
+library('scatterplot3d')
+library('dplyr')
+library('mice')
+library('randomForest')
+
+## Loading the necessary packages
+
+P_Students <- read.csv('C:/Users/srush/Desktop/Student Alcohol Consumption/student/Portugese.csv',sep=";",stringsAsFactors = T)
+M_Students <- read.csv('C:/Users/srush/Desktop/Student Alcohol Consumption/student/Math.csv',sep=";",stringsAsFactors = T)
+
+##Reading the data of students taking portugese and math
+
+Students <- bind_rows(P_Students,M_Students)
+
+## Combining both course students into single data frame
+
+print("Checking the data")
+
+str(Students)
+
+##Checking data
+
+print("Displaying the summary of data")
+
+print(summary(Students))
+
+## Summarizing data
+
+print("Printing the column names of students data frame")
+
+print(names(Students))
+
+## Calculating the total alcohol consumption of students based on the weekend and dialy alcohol consumption
+
+Students$Talc <- round(((Students$Walc * 2) + (Students$Dalc * 5))/7,0)
+
+print(Students$Talc)
+
+## Let us consider that the student is drinker only if the alcohol consumption rate is greater than 3
+
+Students$drinker[(Students$Talc) <= 3] <- 0
+Students$drinker[(Students$Talc) >= 4] <- 1
+
+print("The status of student alcohol consumption. 0 is light drinker while 1 is heavy drinker")
+Students$drinker
+
+## Writing the dataframe that is combined and added the column total alcohol consumption to the .csv file
+
+write.csv(Students,"C:/Users/srush/Desktop/Student Alcohol Consumption/student/Students.csv",sep=";",row.names = FALSE,na="")
+
+## Exploring individual variables
+
+hist(Students$Talc,col="yellow")
+hist(Students$G3,col="blue")
+
+plot(density(Students$G3))
+plot(density(Students$Talc))
+pie(table(Students$G3),xpd=T,main="Pie chart of student grades")
+pie(table(Students$Talc),xpd=T,main="Pie chart of student alcohol consumption")
+plot(density(Students$failures),main="Density plot of student failures")
+
+
+print("Statistics between the gender of students and the total alcohol consumption rate")
+print(table(Students$sex,Students$Talc))
+
+barplot(table(Students$sex,Students$Talc),legend=T,beside=T,main="Relation between alcohol consumption and gender")
+
+## LEt us see the relation between the occupation of mother and father and the student overall performance
+
+
+print(table(Students$Mjob,Students$G3))
+barplot(table(Students$Mjob,Students$G3),legend=T,beside=T,main="Relation between mother's education and student overall grades")
+
+
+
+print(table(Students$Fjob,Students$G3))
+barplot(table(Students$Fjob,Students$G3),legend=T,beside=T,main="Relation between father's education and student overall performance")
+
+## Does health have any impact on the student's academic performance
+ 
+print(table(Students$health,Students$G3))
+barplot(table(Students$health,Students$G3),legend=T,beside = T,main="Impact of student's health on the overall performance")
+
+## The interest of students in higher education definitely has to do something with the grades
+
+print(table(Students$higher,Students$G3))
+barplot(table(Students$higher,Students$G3),legend=T,beside=T,main="Relation between student's interest in higher education and grades")
+
+mosaicplot(table(Students$famsize,Students$Talc),main="Family size impact on alcohol consumption",shade=TRUE)
+
+## let us find the relationship between the parent marital status and student overall grade
+
+Students$G3[(Students$G3 >= 0) & (Students$G3 <= 4)] <- 0
+Students$G3[(Students$G3 > 4) & (Students$G3 <= 8)] <- 1
+Students$G3[(Students$G3 == "9")] <- 2
+Students$G3[(Students$G3 == "10")] <- 2
+Students$G3[(Students$G3 == "11")] <- 2
+Students$G3[(Students$G3 == "12")] <- 2
+Students$G3[(Students$G3 > 12) & (Students$G3 <= 16)] <- 3
+Students$G3[(Students$G3 >16) & (Students$G3 <= 20)] <- 4
+
+
+mosaicplot(table(Students$Pstatus,Students$G3),main="Impact of parent marital status on children education",shade=TRUE)
+
+barplot(table(Students$Pstatus,Students$G3),legend=T,beside=T,main="Impact of parent marital status on child's education",shade=TRUE)
+barplot(table(Students$Pstatus,Students$Talc),legend=T,beside=T,main="Impact of parent marital status on child's alcohol consumption",shade=TRUE)
+
+## RElation between the gender and the grades
+
+mosaicplot(table(Students$sex,Students$G3),main="Relation between the gender and performance",shade=TRUE)
+
+## Does living in rural or urban has to do something with the performance or alcohol consumption??
+
+mosaicplot(table(Students$address,Students$G3),main="Impact of rural/urban living on performance")
+
+## Effects if parent's education and student's performance
+
+print(table(Students$Medu,Students$G3))
+barplot(table(Students$Medu,Students$G3),legend=T,beside=T,main="Impact of parent's education on child's performance",shade=TRUE)
+
+## Past failures obviously has some effect on the future grades
+
+print(table(Students$failures,Students$G3))
+barplot(table(Students$failures,Students$G3),legend=T,beside=T,main="Impact of past failures on child's performance",shade=TRUE)
+
+print(table(Students$absences,Students$G3))
+print(table(Students$Fedu,Students$G3))
+barplot(table(Students$Fedu,Students$G3),legend=T,beside=T,main="Impact of parent's education on child's performance",shade=TRUE)
+
+## The extra curricular activities has nothing to with the student grades
+
+print(table(Students$activities,Students$G3))
+barplot(table(Students$activities,Students$G3),legend=T,beside=T,main="Impact of extra curricular activities on student's studies")
+
+## People with less extra curricular activities are less addicted to alcohol comparitively
+barplot(table(Students$activities,Students$Talc),legend=T,beside=T,main="Impact of extra curricular activities on student's alcohol consumption")
+
+print("Impact of internet on student's grades")
+print(table(Students$internet,Students$G3))
+barplot(table(Students$internet,Students$G3),legend=T,beside=T,main="Impact of internet on child's studies")
+
+barplot(table(Students$internet,Students$Talc),legend=T,beside=T,main="Impact of internet on student's alcohol consumption")
+
+##Paid classes out of school are not helping the child increase grades to very good but people at very bad grade need to take them 
+barplot(table(Students$paid,Students$G3),legend=T,beside=T,main="Impact of paid classes on grades")
+
+## Children taking paid classes are comparitively less addicted to high alcohol consumption
+barplot(table(Students$paid,Students$Talc),legend=T,beside=T,main="Impact of paid classes on alcohol consumption")
+
+##Students having the financial support for education from the family are getting good grades
+barplot(table(Students$famsup,Students$G3),legend=T,beside=T,main="Impact of the financial support from the family on the grades")
+
+## The free time of students has the effect on the total alcohol consumption
+print("Students with more free time are in high level of alcohol addiction compared to the students with less free time")
+print(table(Students$freetime,Students$G3))
+barplot(table(Students$freetime,Students$G3),legend=T,beside=T,main="Relation between the free time of students and alcohol consumption")
+
+## Impact of going out with friends on student's grades and the student alcohol addiction rate
+print("Impact of students habit of going out with friends on the grades and alcohol consumption")
+print(table(Students$goout,Students$G3))
+print(table(Students$goout,Students$Talc))
+barplot(table(Students$goout,Students$G3),legend=T,beside=T,main="Impact of student's habit of going out with friends on the grades")
+barplot(table(Students$goout,Students$G3),legend=T,beside=T,main="Impact of student's habit of going out with friends on the alcohol consumption")
+
+print("Impact of family relation ship on child's studies")
+print(table(Students$famrel,Students$G3))
+barplot(table(Students$famrel,Students$G3),legend=T,beside = T,main="Impact of family relationships on child's studies")
+
+## Surprisingly the students without a romantic relationship are performing well
+print("Having romantic relationship has negative affect on the student's grades")
+print(table(Students$romantic,Students$G3))
+barplot(table(Students$romantic,Students$G3),legend=T,beside=T,main="Impact of the romantic relationship on studies")
+
+## Students staying close to school has better grades
+print("Students living close to school has better grades")
+print(table(Students$traveltime,Students$G3))
+barplot(table(Students$traveltime,Students$G3),legend=T,beside=T,main="Impact of the travel time on final grades")
+
+boxplot(G3~Talc,data=Students,main="Box plot between the grades and alcohol consumption")
+
+
+ 
+
+
+## SCatter plot between the student grades and failures 
+with(Students,plot(G3,failures,col=Talc))
+
+qplot(Students$G3,Students$address,data=Students,facets=Talc~.)
+
+## Dividing the data into training and test data sets 
+
+set.seed(1234)
+index <- sample(2,nrow(Students),replace=TRUE,prob=c(0.7,0.3))
+Students_trainData <- Students[index==1,]
+Students_testData <- Students[index==2,]
+
+## We have seen the relationship between multiple variables we will now use a model to see the relationship between data
+## Using linear regression to find the relationship between some dependent variables and the variable to be predicted
+
+talc.mod <- lm(Talc ~ famsize + failures + famrel + absences + G3,data=Students_testData)
+summary(talc.mod)
+
+## Making grade the dependent variable and trying to predict it using the formula 
+grades.mod <- lm(G3 ~ Talc + absences + famsize + higher + failures,data=Students_trainData)
+summary(grades.mod)
+coef(grades.mod)
+
+
+## COmparing the original values with the predicted ones
+
+Students_trainData$G3
+fitted(grades.mod)
+
+result <- predict(grades.mod,Students_testData)
+print(result)
+
+
+## PRedicting the alcohol consumption 
+
+alc.mode <- lm(Talc ~ G3 + absences + goout + failures + famrel + famsize + Walc +Dalc,data=Students_trainData)
+coef(summary(alc.mode))
+
+
+print("Original alcohol consumption values")
+Students_trainData$Talc
+print("Prdicted alcohol consumption values")
+fitted(alc.mode)
+
+alc_prediction <- predict(alc.mode,Students_testData)
+print("Alcohol consumption predicted values")
+print(alc_prediction)
+
+plot(alc_prediction)
+
+alc.res <- resid(alc.mode)
+plot(Students_trainData$Talc,alc.res,ylab="Predicted",xlab="Original",main="Original and predicted alcohol consumption values")
+abline(0,0)
+
+
+## LInear regression to predict grades
+
+grades.lm <- lm(G3 ~ age + famsize + studytime + failures + paid + higher + goout + absences + G1 + G2,data=Students_trainData)
+grades.lm.coeff=coefficients(grades.lm)
+print("THe coefficients of the equation to predict the grades")
+grades.lm.coeff
+predict(grades.lm,Students_testData)
+
+## Coefficient of determination of the linear regression model that we have designed to predict the values of the grades of students
+Students_testData$G3
+print("The coefficient of the determination of linear regression model to predict the student grades")
+summary(grades.lm)$r.squared
+
+
+## Significance of the relationship between the variables in the model
+summary(grades.lm)
+## If the p-value is much less than 0.10 then there is the significant relationship between the variables
+
+## USe the default confidence level as 0.95 and predict the values of student grades to find the upper and lower possible values
+
+print("Confidence Interval for student grades prediction values")
+predict(grades.lm,newdata=Students_testData,interval="confidence")
+
+## Prediction interval ==> 0.95
+
+predict(grades.lm,newdata=Students_testData,interval="predict")
+
+## Normal probability plot to show the original and the predicted values on the plot
+
+grades.lm.stdres <- rstandard(grades.lm)
+qqnorm(grades.lm.stdres,ylab="Predicted values",xlab="Original values",main="Original and predicted student grades")
+qqline(grades.lm.stdres)
+
+colors=c("red","yellow","green","violet","orange","blue","pink","cyan")
+hist(Students_trainData$G3,right=FALSE,col=colors,main="Student grades distribution",xlab="Student Grades")
+
+hist(Students_trainData$Talc,right=FALSE,col=colors,main="Student alcohol consumption distribution",xlab="Alcohol Consumption")
+
+hist(Students_trainData$failures,right=FALSE,col=colors,main="Student failures distribution",xlab="Number of student failures")
+
+hist(Students_trainData$age,right=FALSE,col=colors,main="Student age distribution",xlab="Student age")
+
+## Applying association rules
+
+
+summary(Students$Talc)
+
+
+tree_model_1 <- rpart( G3 ~ age + address + famsize + Medu + Fedu + traveltime + studytime + failures + paid + higher + internet + romantic + famrel + freetime + absences + Talc,data=Students_trainData,method = "class")
+
+printcp(tree_model_1)
+plotcp(tree_model_1)
+
+tree_model_2 <- rpart(G3 ~ higher + failures + Talc + absences,data=Students_trainData,method="class")
+plot(tree_model_2)
+text(tree_model_2)
+
+## Clustering Data
+
+print(Students$drinker)
+parent_education_alcohol_consumption <- 0
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if(((details$Medu < 3) || (details$Fedu<3)) & (details$drinker == 1))
+     {
+       parent_education_alcohol_consumption <- parent_education_alcohol_consumption+1
+  }
+}
+
+print("Statistics of students with high alcohol consumption and less parent education")
+print(parent_education_alcohol_consumption)
+
+
+parent_occupation_alcohol_consumption <- 0
+for(i in 1:nrow(Students))
+{
+  student_info <- Students[i,]
+  if(((student_info$Mjob == "at_home") || (student_info$Fjob == "at_home")) & (student_info$drinker == 1))
+     {
+       parent_occupation_alcohol_consumption <- parent_occupation_alcohol_consumption + 1
+  }
+}
+
+print("Statistics of studnets with parents not occupied and highly addicted to alcohol")
+print(parent_occupation_alcohol_consumption)
+
+family_impact_on_child_alcohol <- 0
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if((details$famsize == "GT3" && details$famrel <= 3) & (details$drinker == 1))
+  {
+    family_impact_on_child_alcohol <- family_impact_on_child_alcohol + 1
+  }
+}
+
+print("Impact of health of family on the child's alcohol consumption")
+print(family_impact_on_child_alcohol)
+
+male_alcohol <- 0
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if((details$sex == "M") & (details$drinker == 1))
+  {
+    male_alcohol <- male_alcohol+1
+  }
+}
+
+print("Relation between gender and alcohol consumption (male)")
+print(male_alcohol)
+
+female_alcohol <- 0
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if((details$sex == "F") & (details$drinker == 1))
+  {
+    female_alcohol <- female_alcohol+1
+  }
+}
+
+print("Relation between gender and alcohol consumption (female)")
+print(female_alcohol)
+
+underage_high_alcohol_consumption <- 0
+underage_alcohol_consumption <- 0
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if((details$age <= 18) & (details$drinker == 1))
+  {
+    underage_high_alcohol_consumption <- underage_high_alcohol_consumption + 1
+  }else if((details$age <= 18) & (details$drinker == 0))
+  {
+    underage_alcohol_consumption <- underage_alcohol_consumption + 1
+  }
+}
+
+print("Number of under age students highly addicted to alcohol (15-18)")
+print(underage_high_alcohol_consumption)
+print("Number of normal age students with less/no alcohol consumption (15-18)")
+print(underage_alcohol_consumption)
+
+normalage_high_alcohol_consumption <- 0
+normalage_alcohol_consumption <- 0
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if((details$age > 18) & (details$drinker == 1))
+  {
+    normalage_high_alcohol_consumption <- normalage_high_alcohol_consumption + 1
+  }else if((details$age > 18) & (details$drinker == 0))
+  {
+    normalage_alcohol_consumption <- normalage_alcohol_consumption + 1
+  }
+}
+
+print("Number of normal age students highly addicted to aclohol (18-22)")
+print(normalage_high_alcohol_consumption)
+print("Number of normal age students normally addicted to aclohol(18-22)")
+print(normalage_alcohol_consumption)
+
+Social_AlcoholConsumption <- 0
+
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if(((details$activities == "yes") & (details$goout >= 3)) & (details$drinker == 1))
+  {
+    Social_AlcoholConsumption <- Social_AlcoholConsumption+1
+  }
+}
+
+print("Number of students with social life style and heavy alcohol consumption")
+print(Social_AlcoholConsumption)
+
+Study_Alcohol <- 0
+
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if(((details$G3 >= 2)) & (details$drinker == 0))
+  {
+    Study_Alcohol <- Study_Alcohol+1
+  }
+}
+
+print("Number of students with good grades and no/less alcohol consumption")
+print(Study_Alcohol)
+
+
+Studytime_alcoholconsumption <- 0
+
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if(((details$studytime <= 2) & (details$freetime >= 3)) & (details$drinker == 1))
+  {
+    Studytime_alcoholconsumption <- Studytime_alcoholconsumption+1
+  }
+}
+print("Number of students with less study time and high alcohol consumption rate")
+print(Studytime_alcoholconsumption)
+
+Alcohol_Health <- 0
+
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if((details$drinker == 1) & (details$health <= 3))
+  {
+    Alcohol_Health <- Alcohol_Health + 1
+  }
+}
+
+print("Number of students highly addicted to alcohol in poor health")
+print(Alcohol_Health)
+
+SchoolSupport_Alcohol <- 0
+
+for(i in 1:nrow(Students))
+{
+  details <- Students[i,]
+  if((details$drinker == 1) & (details$schoolsup == "yes"))
+  {
+    SchoolSupport_Alcohol <- SchoolSupport_Alcohol + 1
+  }
+}
+
+print("Number of students studying under school support and addicted to alcohol")
+print(SchoolSupport_Alcohol)
+
+

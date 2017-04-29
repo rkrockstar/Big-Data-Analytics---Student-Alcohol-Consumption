@@ -1,0 +1,95 @@
+library(shiny)
+library(ggplot2)
+
+ui <- fluidPage(
+  titlePanel("Predicting the level of Student Alcohol Consumption"),
+  sidebarLayout(
+    sidebarPanel(id="sidebar",
+                 fileInput("input_file","Upload the data file"),
+                 helpText("Default maximum size is 100MB"),
+                 tags$hr(),
+                 h5(helpText("Select the parameters")),
+                 checkboxInput(inputId="header",label="Header",value=FALSE),
+                 checkboxInput(inputId="stringsAsFactors",label="stringsAsFactors",value=FALSE),
+                 br(),
+                 radioButtons(inputId="sep",label="Seperator",choices=c(Comma=',',Semicolon=';',Tab='\t',Space=' '),selected=',')),
+    mainPanel(
+      tableOutput("tab")
+    )
+    )
+  )
+
+server <- function(input,output,session){
+  
+  data <- reactive({
+    ifile <- input$input_file
+    if(is.null(ifile)){return(NULL)}
+    students <- read.csv(ifile$datapath,header=input$header,sep=input$sep,stringsAsFactors = input$stringsAsFactors)
+    students$Talc <- round((students$Walc * 2 + students$Dalc * 5)/7,digits = 0)
+    students$drinker[(students$Talc) <= 3] <- 0
+    students$drinker[(students$Talc) >= 4] <- 1 
+    students
+  })
+  
+  alc <- reactive({
+    students_data <- data()
+    high_consumption <- 0
+    little_consumption <- 0
+    medium_consumption <- 0
+    for(i in 1:nrow(students_data))
+    {
+      det <- students_data[i,]
+      if(det$age < 18)
+      {
+        if((det$Fedu >= 3 | det$Medu >= 3) & (det$Mjob != "at_home" | det$Fjob != "at_home"))
+        {
+          if(det$studytime < 3 & det$G3 <= 10)
+          {
+            high_consumption <- high_consumption + 1
+          }else{
+            medium_consumption <- medium_consumption + 1
+          }
+        }else{
+          little_consumption <- little_consumption + 1
+        }
+      }
+      
+      if(det$age >= 18)
+      {
+        if((det$Fedu < 3 | det$Medu < 3) & (det$Mjob == "at_home" | det$Fjob == "at_home"))
+        {
+          if(det$studytime < 3 & det$G3 <= 10)
+          {
+            if(det$goout >= 3)
+            {
+              high_consumption <- high_consumption + 1
+            }else{
+              medium_consumption <- medium_consumption + 1
+            }
+          }else{
+            little_consumption <- little_consumption + 1
+          }
+        }
+      }
+      
+      print(high_consumption)
+      print(medium_consumption)
+      print(little_consumption)
+      
+      alcohol <- matrix(c(high_consumption,medium_consumption,little_consumption),ncol = 1,byrow=FALSE)
+      alcohol
+    }
+    
+    alcohol
+  })
+  output$tab <- renderTable({
+   
+    alc_table <- alc()
+    rownames(alc_table) <- c("High Alcohol Consumption","Medium Alcohol Consumption","Little/No Alcohol Consumption")
+    colnames(alc_table) <- c("Number of students at each level of alcohol consumption")
+    as.table(alc_table)
+    })
+  
+}
+
+shinyApp(ui,server)
